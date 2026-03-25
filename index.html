@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda Settimanale</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1814">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AgendaPro">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #f7f5f0;
+  --surface:   #ffffff;
+  --border:    #e8e3da;
+  --ink:       #1a1814;
+  --ink2:      #7a7570;
+  --accent:    #e8650a;
+  --accent2:   #ff8c38;
+  --accent-lt: #fde8d0;
+  --wa:        #25D366;
+  --danger:    #c1121f;
+  --blue:      #1a6fc4;
+  --slot-h:    56px;
+  --col-time:  56px;
+  --radius:    10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;}
+
+/* TOP BAR */
+.topbar{background:var(--ink);color:#fff;padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:100;}
+.topbar-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;letter-spacing:-.5px;white-space:nowrap;}
+.topbar-logo span{color:var(--accent2);}
+.topbar-biz{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px 12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:180px;}
+.topbar-biz::placeholder{color:rgba(255,255,255,.45);}
+.topbar-right{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.btn-top{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:filter .2s;}
+.btn-top:hover{filter:brightness(1.15);}
+
+/* WEEK NAV */
+.week-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:14px 20px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:56px;z-index:99;}
+.week-label{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;min-width:200px;text-align:center;}
+.btn-nav{background:none;border:1px solid var(--border);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;color:var(--ink);}
+.btn-nav:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
+.btn-oggi{background:var(--accent-lt);color:var(--accent);border:1px solid var(--accent2);border-radius:6px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-oggi:hover{background:var(--accent);color:#fff;}
+
+/* GRIGLIA */
+.cal-wrap{overflow-x:auto;padding:0 16px 40px;}
+.cal{min-width:640px;}
+.days-header{display:grid;grid-template-columns:var(--col-time) repeat(7,1fr);border-bottom:2px solid var(--border);background:var(--surface);position:sticky;top:108px;z-index:98;}
+.day-head{padding:10px 4px;text-align:center;border-left:1px solid var(--border);}
+.day-head-name{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--ink2);font-weight:500;}
+.day-head-num{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1.1;margin-top:2px;color:var(--ink);}
+.day-head.oggi .day-head-num{background:var(--accent);color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:2px auto 0;}
+.grid-body{display:grid;grid-template-columns:var(--col-time) repeat(7,1fr);background:var(--surface);}
+.time-col{border-right:1px solid var(--border);}
+.time-slot{height:var(--slot-h);display:flex;align-items:flex-start;justify-content:flex-end;padding:4px 8px 0 0;font-size:11px;color:var(--ink2);font-weight:500;border-bottom:1px solid var(--border);}
+.day-col{border-left:1px solid var(--border);position:relative;}
+.day-col.oggi-col{background:rgba(244,185,66,.03);}
+.cell{height:var(--slot-h);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;position:relative;}
+.cell.ora-piena{border-bottom:1px solid #d8d3ca;}
+.cell:hover{background:var(--accent-lt);}
+
+/* BLOCCO APPUNTAMENTO */
+.apt-block{position:absolute;left:2px;right:2px;border-radius:6px;padding:4px 7px;overflow:hidden;cursor:pointer;z-index:10;transition:filter .2s,transform .15s;border-left:3px solid transparent;}
+.apt-block:hover{filter:brightness(.93);transform:scale(1.01);}
+.apt-block .ab-nome{font-size:12px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.apt-block .ab-ora{font-size:10px;opacity:.8;margin-top:1px;}
+.apt-block .ab-serv{font-size:10px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.color-0{background:#fde8d0;border-left-color:#e8650a;color:#7c2d12;}
+.color-1{background:#dbe4ff;border-left-color:#4361ee;color:#1e3a8a;}
+.color-2{background:#ffd8d8;border-left-color:#c1121f;color:#7f1d1d;}
+.color-3{background:#e8d5f5;border-left-color:#7c3aed;color:#4c1d95;}
+.color-4{background:#fde8d0;border-left-color:#ea580c;color:#7c2d12;}
+.color-5{background:#d3f9d8;border-left-color:#2f9e44;color:#1a4731;}
+
+/* LINEA ORA */
+.now-line{position:absolute;left:0;right:0;height:2px;background:var(--blue);z-index:20;pointer-events:none;}
+.now-line::before{content:'';position:absolute;left:-1px;top:-4px;width:10px;height:10px;background:var(--blue);border-radius:50%;}
+
+/* OVERLAY GENERICO */
+.overlay,.list-overlay,.rub-overlay{display:none;position:fixed;inset:0;background:rgba(26,24,20,.55);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px);}
+.overlay.open,.list-overlay.open,.rub-overlay.open{display:flex;}
+.list-overlay,.rub-overlay{align-items:flex-end;justify-content:center;padding:0;}
+
+/* MODAL APPUNTAMENTO */
+.modal{background:var(--surface);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:popIn .25s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-head{background:var(--ink);color:#fff;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;}
+.modal-head h2{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+.btn-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+.btn-close:hover{background:rgba(255,255,255,.3);}
+.modal-body{padding:22px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.form-row.full{grid-template-columns:1fr;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--ink2);}
+.fg input,.fg textarea,.fg select{border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;background:#fff;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(201,146,10,.12);}
+.fg textarea{resize:vertical;min-height:68px;}
+.modal-foot{padding:16px 22px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;}
+.btn-save{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:filter .2s;}
+.btn-save:hover{filter:brightness(1.1);}
+.btn-wa{background:var(--wa);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:filter .2s;}
+.btn-wa:hover{filter:brightness(1.1);}
+.btn-del{background:none;border:1px solid var(--border);border-radius:8px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink2);cursor:pointer;margin-left:auto;transition:all .2s;}
+.btn-del:hover{border-color:var(--danger);color:var(--danger);}
+.msg-area{background:#f0f2f5;border:1px dashed var(--border);border-radius:7px;padding:11px;font-size:12.5px;color:#555;line-height:1.75;white-space:pre-wrap;word-break:break-word;min-height:60px;}
+
+/* AUTOCOMPLETE */
+.autocomplete-wrap{position:relative;}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:0 0 8px 8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:500;max-height:200px;overflow-y:auto;display:none;}
+.autocomplete-list.open{display:block;}
+.ac-item{padding:10px 14px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border);}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--accent-lt);}
+.ac-nome{font-weight:600;font-size:14px;}
+.ac-tel{font-size:12px;color:var(--ink2);}
+
+/* MODAL LISTA */
+.list-modal,.rub-modal{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(0,0,0,.15);animation:slideUp .3s ease;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.list-modal-head,.rub-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surface);}
+.list-modal-head h3,.rub-head h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
+.list-body{overflow-y:auto;flex:1;}
+.apt-list-item{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);gap:12px;transition:background .15s;}
+.apt-list-item:hover{background:var(--bg);}
+.ali-left{flex:1;min-width:0;}
+.ali-nome{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ali-meta{font-size:12px;color:var(--ink2);margin-top:2px;}
+.ali-right{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+
+/* RUBRICA */
+.rub-search{padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.rub-search input{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;background:var(--bg);}
+.rub-search input:focus{border-color:var(--accent);}
+.rub-list{overflow-y:auto;flex:1;}
+.rub-item{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);transition:background .15s;}
+.rub-item:hover{background:var(--bg);}
+.rub-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent-lt);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rub-info{flex:1;min-width:0;}
+.rub-nome{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rub-tel{font-size:12px;color:var(--ink2);margin-top:2px;}
+.rub-note-text{font-size:11px;color:var(--ink2);font-style:italic;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rub-actions{display:flex;gap:6px;flex-shrink:0;}
+.btn-icon{background:none;border:1px solid var(--border);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;color:var(--ink2);}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent);}
+.btn-icon.del:hover{border-color:var(--danger);color:var(--danger);}
+.rub-form{padding:14px 20px;border-top:2px solid var(--border);background:var(--bg);flex-shrink:0;}
+.rub-form-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink2);margin-bottom:10px;}
+.rub-form-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;}
+.rub-form-row input{border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;background:#fff;transition:border-color .2s;width:100%;}
+.rub-form-row input:focus{border-color:var(--accent);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+@media(max-width:600px){
+  :root{--slot-h:48px;--col-time:44px;}
+  .topbar-biz{width:110px;}
+  .week-label{font-size:13px;min-width:130px;}
+  .rub-form-row{grid-template-columns:1fr 1fr;gap:6px;}
+  .form-row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">Agenda<span>Pro</span></div>
+  <input class="topbar-biz" type="text" id="nomeAttivita" placeholder="Nome attività..." maxlength="50">
+  <div class="topbar-right">
+    <button class="btn-top" onclick="apriNuovo(null,null)">＋ Nuovo</button>
+    <button class="btn-top" style="background:#3a3630" onclick="apriLista()">📋 Lista</button>
+    <button class="btn-top" style="background:#5a4a20" onclick="apriRubrica()">👥 Rubrica</button>
+  </div>
+</div>
+
+<!-- WEEK NAV -->
+<div class="week-nav">
+  <button class="btn-nav" onclick="cambiaSettimana(-1)">&#8249;</button>
+  <button class="btn-oggi" onclick="vaiOggi()">Oggi</button>
+  <div class="week-label" id="weekLabel"></div>
+  <button class="btn-nav" onclick="cambiaSettimana(1)">&#8250;</button>
+</div>
+
+<!-- CALENDARIO -->
+<div class="cal-wrap">
+<div class="cal">
+  <div class="days-header" id="daysHeader"><div></div></div>
+  <div class="grid-body" id="gridBody">
+    <div class="time-col" id="timeCol"></div>
+  </div>
+</div>
+</div>
+
+<!-- MODAL APPUNTAMENTO -->
+<div class="overlay" id="overlay" onclick="chiudiModal(event)">
+<div class="modal">
+  <div class="modal-head">
+    <h2 id="modalTitolo">Nuovo Appuntamento</h2>
+    <button class="btn-close" onclick="chiudiOverlay()">&#10005;</button>
+  </div>
+  <div class="modal-body">
+
+    <!-- Selezione rapida dalla rubrica -->
+    <div class="form-row full" style="margin-bottom:10px">
+      <div class="fg">
+        <label>&#128100; Cerca in rubrica (oppure scrivi sotto)</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="m-cerca" placeholder="Inizia a digitare il nome..." autocomplete="off" oninput="filtroAuto()" onblur="setTimeout(()=>chiudiAuto(),200)">
+          <div class="autocomplete-list" id="autoList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="fg">
+        <label>Nome Cliente *</label>
+        <input type="text" id="m-nome" placeholder="Es. Marco Rossi" maxlength="80" oninput="aggiornaAnteprima()">
+      </div>
+      <div class="fg">
+        <label>Telefono (WhatsApp) *</label>
+        <input type="tel" id="m-tel" placeholder="Es. 3331234567" maxlength="20" oninput="aggiornaAnteprima()">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fg">
+        <label>Data *</label>
+        <input type="date" id="m-data" oninput="aggiornaAnteprima()">
+      </div>
+      <div class="fg">
+        <label>Ora inizio *</label>
+        <input type="time" id="m-ora" oninput="aggiornaAnteprima()">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fg">
+        <label>Durata</label>
+        <select id="m-durata">
+          <option value="30">30 minuti</option>
+          <option value="45">45 minuti</option>
+          <option value="60" selected>1 ora</option>
+          <option value="90">1 ora e mezza</option>
+          <option value="120">2 ore</option>
+          <option value="180">3 ore</option>
+          <option value="0">Tutto il giorno</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Servizio</label>
+        <input type="text" id="m-servizio" placeholder="Es. Taglio, Visita..." maxlength="60" oninput="aggiornaAnteprima()">
+      </div>
+    </div>
+    <div class="form-row full">
+      <div class="fg">
+        <label>Note private</label>
+        <textarea id="m-note" placeholder="Annotazioni per te..."></textarea>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:0">
+      <label>Modello messaggio WhatsApp</label>
+      <textarea id="m-template" rows="4" oninput="aggiornaAnteprima()" style="border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;background:#fff;resize:vertical;width:100%">Ciao {NOME}! &#128075;
+Ti ricordiamo il tuo appuntamento presso {ATTIVITA'} per {SERVIZIO} il {DATA} alle {ORA}.
+Ti aspettiamo! &#128522;</textarea>
+      <div style="font-size:11px;color:var(--ink2);margin-top:3px">
+        Variabili: <b>{NOME}</b> &middot; <b>{ATTIVITA'}</b> &middot; <b>{DATA}</b> &middot; <b>{ORA}</b> &middot; <b>{SERVIZIO}</b>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:12px">
+      <label>Anteprima messaggio</label>
+      <div class="msg-area" id="m-anteprima"></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn-save" onclick="salva()">&#128190; Salva</button>
+    <a class="btn-wa" id="btnWA" href="#" target="_blank">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+      Invia reminder
+    </a>
+    <button class="btn-del" id="btnElimina" style="display:none" onclick="elimina()">&#128465; Elimina</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL LISTA -->
+<div class="list-overlay" id="listOverlay" onclick="chiudiListaExt(event)">
+<div class="list-modal">
+  <div class="list-modal-head">
+    <h3>&#128203; Tutti gli appuntamenti</h3>
+    <button class="btn-close" style="background:var(--border);color:var(--ink)" onclick="chiudiListaBtn()">&#10005;</button>
+  </div>
+  <div class="list-body" id="listaCorpo"></div>
+</div>
+</div>
+
+<!-- MODAL RUBRICA -->
+<div class="rub-overlay" id="rubOverlay" onclick="chiudiRubricaExt(event)">
+<div class="rub-modal">
+  <div class="rub-head">
+    <h3>&#128100; Rubrica Clienti</h3>
+    <button class="btn-close" style="background:var(--border);color:var(--ink)" onclick="chiudiRubricaBtn()">&#10005;</button>
+  </div>
+  <div class="rub-search">
+    <input type="text" id="rubSearch" placeholder="&#128269; Cerca cliente..." oninput="renderRubrica()">
+  </div>
+  <div class="rub-list" id="rubLista"></div>
+  <div class="rub-form">
+    <div class="rub-form-title">&#10133; Aggiungi nuovo cliente</div>
+    <div class="rub-form-row">
+      <input type="text"  id="rub-nome" placeholder="Nome e Cognome" maxlength="80">
+      <input type="tel"   id="rub-tel"  placeholder="Telefono" maxlength="20">
+      <input type="text"  id="rub-note" placeholder="Note (opz.)" maxlength="100">
+      <button class="btn-save" style="padding:9px 16px;white-space:nowrap" onclick="aggiungiCliente()">&#10133; Aggiungi</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ORA_INIZIO  = 7;
+const ORA_FINE    = 22;
+const SLOT_MIN    = 30;
+const SLOTS_TOT   = ((ORA_FINE - ORA_INIZIO) * 60) / SLOT_MIN;
+const GIORNI_NOME = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+const MESI_BREVE  = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const COLORS      = 6;
+
+let appuntamenti    = JSON.parse(localStorage.getItem('apt_v2')  || '[]');
+let rubrica         = JSON.parse(localStorage.getItem('apt_rub') || '[]');
+let nomeAttivita    = localStorage.getItem('apt_biz') || '';
+let offsetSettimana = 0;
+let aptCorrente     = null;
+
+// ── AVVIO ──
+window.addEventListener('DOMContentLoaded', () => {
+  if (nomeAttivita) document.getElementById('nomeAttivita').value = nomeAttivita;
+
+  document.getElementById('nomeAttivita').addEventListener('input', function(){
+    nomeAttivita = this.value.trim();
+    localStorage.setItem('apt_biz', nomeAttivita);
+    aggiornaAnteprima();
+  });
+
+  costruisciColonnaOre();
+  renderSettimana();
+  avviaLinea();
+});
+
+// ── NAVIGAZIONE SETTIMANA ──
+function getLunedi(offset) {
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const giorno = oggi.getDay();
+  const diffLun = giorno === 0 ? -6 : 1 - giorno;
+  const lun = new Date(oggi);
+  lun.setDate(oggi.getDate() + diffLun + offset * 7);
+  return lun;
+}
+function cambiaSettimana(dir) { offsetSettimana += dir; renderSettimana(); }
+function vaiOggi() { offsetSettimana = 0; renderSettimana(); }
+
+// ── RENDER SETTIMANA ──
+function renderSettimana() {
+  const lun  = getLunedi(offsetSettimana);
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const dom  = new Date(lun); dom.setDate(lun.getDate() + 6);
+  document.getElementById('weekLabel').textContent =
+    `${lun.getDate()} ${MESI_BREVE[lun.getMonth()]} – ${dom.getDate()} ${MESI_BREVE[dom.getMonth()]} ${dom.getFullYear()}`;
+
+  const header = document.getElementById('daysHeader');
+  header.innerHTML = '<div></div>';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(lun); d.setDate(lun.getDate() + i);
+    const isOggi = d.getTime() === oggi.getTime();
+    const div = document.createElement('div');
+    div.className = 'day-head' + (isOggi ? ' oggi' : '');
+    div.innerHTML = `<div class="day-head-name">${GIORNI_NOME[d.getDay()]}</div><div class="day-head-num">${d.getDate()}</div>`;
+    header.appendChild(div);
+  }
+
+  const gridBody = document.getElementById('gridBody');
+  gridBody.querySelectorAll('.day-col').forEach(el => el.remove());
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(lun); d.setDate(lun.getDate() + i);
+    const isOggi = d.getTime() === oggi.getTime();
+    const col = document.createElement('div');
+    col.className = 'day-col' + (isOggi ? ' oggi-col' : '');
+    col.dataset.date = toISO(d);
+    for (let s = 0; s < SLOTS_TOT; s++) {
+      const min = ORA_INIZIO * 60 + s * SLOT_MIN;
+      const h = Math.floor(min / 60), m = min % 60;
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (m === 0 ? ' ora-piena' : '');
+      cell.dataset.time = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      cell.addEventListener('click', () => apriNuovo(toISO(d), cell.dataset.time));
+      col.appendChild(cell);
+    }
+    gridBody.appendChild(col);
+  }
+  posizionaAppuntamenti(lun);
+}
+
+function costruisciColonnaOre() {
+  const col = document.getElementById('timeCol');
+  col.innerHTML = '';
+  for (let s = 0; s < SLOTS_TOT; s++) {
+    const min = ORA_INIZIO * 60 + s * SLOT_MIN;
+    const h = Math.floor(min / 60), m = min % 60;
+    const div = document.createElement('div');
+    div.className = 'time-slot';
+    div.textContent = m === 0 ? `${String(h).padStart(2,'0')}:00` : '';
+    col.appendChild(div);
+  }
+}
+
+function posizionaAppuntamenti(lunedi) {
+  document.querySelectorAll('.apt-block').forEach(el => el.remove());
+  const lun = new Date(lunedi);
+  const colorMap = {}; let colorIdx = 0;
+  appuntamenti.forEach(apt => {
+    const aptDate = new Date(apt.data + 'T00:00:00');
+    const diffDays = Math.round((aptDate - lun) / 86400000);
+    if (diffDays < 0 || diffDays > 6) return;
+    const col = document.querySelectorAll('.day-col')[diffDays];
+    if (!col) return;
+    const [hh, mm] = apt.ora.split(':').map(Number);
+    const minFromStart = hh * 60 + mm - ORA_INIZIO * 60;
+    if (minFromStart < 0 || minFromStart >= SLOTS_TOT * SLOT_MIN) return;
+    const durata = apt.durata || 60;
+    const topPx    = (minFromStart / SLOT_MIN) * slotH();
+    const heightPx = durata === 0 ? slotH() : Math.max(24, (durata / SLOT_MIN) * slotH() - 3);
+    const key = apt.nome.toLowerCase().trim();
+    if (!(key in colorMap)) colorMap[key] = colorIdx++ % COLORS;
+    const block = document.createElement('div');
+    block.className = `apt-block color-${colorMap[key]}`;
+    block.style.top = topPx + 'px';
+    block.style.height = heightPx + 'px';
+    block.innerHTML = `<div class="ab-nome">${sicuro(apt.nome)}</div><div class="ab-ora">${apt.ora}${durata > 0 ? ' · '+durata+'min' : ''}</div>${apt.servizio ? `<div class="ab-serv">${sicuro(apt.servizio)}</div>` : ''}`;
+    block.addEventListener('click', e => { e.stopPropagation(); apriModifica(apt.id); });
+    col.appendChild(block);
+  });
+}
+
+function slotH() {
+  return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--slot-h')) || 56;
+}
+
+// ── LINEA ORA ──
+function aggiornaLineaOra() {
+  document.querySelectorAll('.now-line').forEach(el => el.remove());
+  if (offsetSettimana !== 0) return;
+  const ora = new Date();
+  const minFromStart = ora.getHours() * 60 + ora.getMinutes() - ORA_INIZIO * 60;
+  if (minFromStart < 0 || minFromStart > SLOTS_TOT * SLOT_MIN) return;
+  const giorno = ora.getDay();
+  const colIdx = giorno === 0 ? 6 : giorno - 1;
+  const cols = document.querySelectorAll('.day-col');
+  if (!cols[colIdx]) return;
+  const line = document.createElement('div');
+  line.className = 'now-line';
+  line.style.top = (minFromStart / SLOT_MIN) * slotH() + 'px';
+  cols[colIdx].appendChild(line);
+}
+function avviaLinea() { aggiornaLineaOra(); setInterval(aggiornaLineaOra, 60000); }
+
+// ── AUTOCOMPLETE RUBRICA ──
+function filtroAuto() {
+  const q = document.getElementById('m-cerca').value.toLowerCase().trim();
+  const list = document.getElementById('autoList');
+  if (!q || rubrica.length === 0) { list.classList.remove('open'); return; }
+  const risultati = rubrica.filter(c =>
+    c.nome.toLowerCase().includes(q) || c.tel.includes(q)
+  ).slice(0, 8);
+  if (risultati.length === 0) { list.classList.remove('open'); return; }
+  list.innerHTML = risultati.map(c => `
+    <div class="ac-item" onmousedown="selezionaCliente(${c.id})">
+      <div class="ac-nome">${sicuro(c.nome)}</div>
+      <div class="ac-tel">${sicuro(c.tel)}</div>
+    </div>`).join('');
+  list.classList.add('open');
+}
+
+function selezionaCliente(id) {
+  const c = rubrica.find(r => r.id === id);
+  if (!c) return;
+  document.getElementById('m-nome').value = c.nome;
+  document.getElementById('m-tel').value  = c.tel;
+  document.getElementById('m-cerca').value = '';
+  document.getElementById('autoList').classList.remove('open');
+  aggiornaAnteprima();
+}
+
+function chiudiAuto() {
+  document.getElementById('autoList').classList.remove('open');
+}
+
+// ── MODAL APPUNTAMENTO ──
+function apriNuovo(data, ora) {
+  aptCorrente = null;
+  document.getElementById('modalTitolo').textContent = 'Nuovo Appuntamento';
+  document.getElementById('btnElimina').style.display = 'none';
+  const oggi = new Date().toISOString().split('T')[0];
+  document.getElementById('m-cerca').value   = '';
+  document.getElementById('m-nome').value    = '';
+  document.getElementById('m-tel').value     = '';
+  document.getElementById('m-data').value    = data || oggi;
+  document.getElementById('m-ora').value     = ora  || '09:00';
+  document.getElementById('m-durata').value  = '60';
+  document.getElementById('m-servizio').value= '';
+  document.getElementById('m-note').value    = '';
+  aggiornaAnteprima();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function apriModifica(id) {
+  const apt = appuntamenti.find(a => a.id === id);
+  if (!apt) return;
+  aptCorrente = id;
+  document.getElementById('modalTitolo').textContent = 'Modifica Appuntamento';
+  document.getElementById('btnElimina').style.display = 'block';
+  document.getElementById('m-cerca').value   = '';
+  document.getElementById('m-nome').value    = apt.nome;
+  document.getElementById('m-tel').value     = apt.telefono;
+  document.getElementById('m-data').value    = apt.data;
+  document.getElementById('m-ora').value     = apt.ora;
+  document.getElementById('m-durata').value  = String(apt.durata || 60);
+  document.getElementById('m-servizio').value= apt.servizio || '';
+  document.getElementById('m-note').value    = apt.note || '';
+  if (apt.template) document.getElementById('m-template').value = apt.template;
+  aggiornaAnteprima();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function chiudiOverlay() { document.getElementById('overlay').classList.remove('open'); }
+function chiudiModal(e)  { if (e.target === document.getElementById('overlay')) chiudiOverlay(); }
+
+// ── SALVA ──
+function salva() {
+  const nome     = document.getElementById('m-nome').value.trim();
+  const telefono = document.getElementById('m-tel').value.trim().replace(/\s/g,'');
+  const data     = document.getElementById('m-data').value;
+  const ora      = document.getElementById('m-ora').value;
+  const durata   = parseInt(document.getElementById('m-durata').value);
+  if (!nome)     { toast('Inserisci il nome del cliente'); return; }
+  if (!telefono) { toast('Inserisci il numero di telefono'); return; }
+  if (!data)     { toast('Inserisci la data'); return; }
+  if (!ora)      { toast("Inserisci l'orario"); return; }
+
+  const apt = {
+    id: aptCorrente || Date.now(),
+    nome, telefono, data, ora, durata,
+    servizio: document.getElementById('m-servizio').value.trim(),
+    note:     document.getElementById('m-note').value.trim(),
+    template: document.getElementById('m-template').value,
+    creato:   new Date().toISOString()
+  };
+
+  if (aptCorrente) {
+    const idx = appuntamenti.findIndex(a => a.id === aptCorrente);
+    if (idx > -1) appuntamenti[idx] = apt;
+  } else {
+    appuntamenti.push(apt);
+    // Offri di salvare in rubrica se non esiste
+    const exists = rubrica.some(c => c.tel === telefono);
+    if (!exists && confirm(`Vuoi aggiungere "${nome}" alla rubrica?`)) {
+      rubrica.push({ id: Date.now(), nome, tel: telefono, note: '' });
+      localStorage.setItem('apt_rub', JSON.stringify(rubrica));
+    }
+  }
+  salvaStorage();
+  chiudiOverlay();
+  renderSettimana();
+  toast('Appuntamento salvato!');
+}
+
+function elimina() {
+  if (!aptCorrente) return;
+  if (!confirm('Eliminare questo appuntamento?')) return;
+  appuntamenti = appuntamenti.filter(a => a.id !== aptCorrente);
+  salvaStorage();
+  chiudiOverlay();
+  renderSettimana();
+  toast('Appuntamento eliminato');
+}
+
+// ── WHATSAPP ──
+function buildMsg(nome, data, ora, servizio, template) {
+  const attivita = nomeAttivita || 'la nostra attivita';
+  return (template || document.getElementById('m-template').value)
+    .replace(/{NOME}/gi, nome)
+    .replace(/{ATTIVITA'}/gi, attivita)
+    .replace(/{DATA}/gi, formattaData(data))
+    .replace(/{ORA}/gi, ora)
+    .replace(/{SERVIZIO}/gi, servizio || 'appuntamento');
+}
+
+function buildWALink(tel, msg) {
+  let t = tel.replace(/[^0-9+]/g,'');
+  if (!t.startsWith('+') && t.length <= 10) t = '39' + t.replace(/^0/,'');
+  return `https://wa.me/${t}?text=${encodeURIComponent(msg)}`;
+}
+
+function aggiornaAnteprima() {
+  const nome    = document.getElementById('m-nome').value.trim() || '___';
+  const data    = document.getElementById('m-data').value || '';
+  const ora     = document.getElementById('m-ora').value || '___';
+  const servizio= document.getElementById('m-servizio').value.trim() || '___';
+  const tel     = document.getElementById('m-tel').value.trim();
+  const msg     = buildMsg(nome, data, ora, servizio);
+  document.getElementById('m-anteprima').textContent = msg;
+  document.getElementById('btnWA').href = tel ? buildWALink(tel, msg) : '#';
+}
+
+// ── LISTA ──
+function apriLista() {
+  const corpo = document.getElementById('listaCorpo');
+  const oggi  = new Date().toISOString().split('T')[0];
+  const sorted = [...appuntamenti].sort((a,b) => (a.data+a.ora).localeCompare(b.data+b.ora));
+  if (sorted.length === 0) {
+    corpo.innerHTML = '<div style="padding:30px;text-align:center;color:var(--ink2)">Nessun appuntamento</div>';
+  } else {
+    corpo.innerHTML = sorted.map(a => {
+      const passato = a.data < oggi, eOggi = a.data === oggi;
+      const msg = buildMsg(a.nome, a.data, a.ora, a.servizio, a.template);
+      return `
+        <div class="apt-list-item" style="${passato?'opacity:.45':''}">
+          <div class="ali-left">
+            <div class="ali-nome">${sicuro(a.nome)}${eOggi?' <span style="font-size:10px;background:var(--accent);color:#fff;border-radius:20px;padding:1px 7px;font-weight:700">Oggi</span>':''}</div>
+            <div class="ali-meta">&#128197; ${formattaData(a.data)} &middot; ${a.ora} &middot; ${a.durata||60}min${a.servizio?' &middot; '+sicuro(a.servizio):''}</div>
+          </div>
+          <div class="ali-right">
+            <a href="${buildWALink(a.telefono,msg)}" target="_blank" class="btn-wa" style="font-size:12px;padding:7px 11px" onclick="event.stopPropagation()">&#128172;</a>
+            <button onclick="event.stopPropagation();apriModifica(${a.id});chiudiListaBtn()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;color:var(--ink2)">&#9998;</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+  document.getElementById('listOverlay').classList.add('open');
+}
+function chiudiListaExt(e) { if (e.target === document.getElementById('listOverlay')) chiudiListaBtn(); }
+function chiudiListaBtn()  { document.getElementById('listOverlay').classList.remove('open'); }
+
+// ── RUBRICA ──
+function apriRubrica() {
+  document.getElementById('rubSearch').value = '';
+  document.getElementById('rub-nome').value  = '';
+  document.getElementById('rub-tel').value   = '';
+  document.getElementById('rub-note').value  = '';
+  renderRubrica();
+  document.getElementById('rubOverlay').classList.add('open');
+}
+function chiudiRubricaExt(e) { if (e.target === document.getElementById('rubOverlay')) chiudiRubricaBtn(); }
+function chiudiRubricaBtn()  { document.getElementById('rubOverlay').classList.remove('open'); }
+
+function renderRubrica() {
+  const q = (document.getElementById('rubSearch').value || '').toLowerCase();
+  const filtrati = rubrica
+    .filter(c => !q || c.nome.toLowerCase().includes(q) || c.tel.includes(q))
+    .sort((a,b) => a.nome.localeCompare(b.nome));
+  const lista = document.getElementById('rubLista');
+  if (filtrati.length === 0) {
+    lista.innerHTML = '<div style="padding:30px;text-align:center;color:var(--ink2)">Nessun cliente in rubrica</div>';
+    return;
+  }
+  lista.innerHTML = filtrati.map(c => {
+    const iniziale = c.nome.trim().charAt(0).toUpperCase();
+    return `
+      <div class="rub-item">
+        <div class="rub-avatar">${iniziale}</div>
+        <div class="rub-info">
+          <div class="rub-nome">${sicuro(c.nome)}</div>
+          <div class="rub-tel">&#128222; ${sicuro(c.tel)}</div>
+          ${c.note ? `<div class="rub-note-text">&#128203; ${sicuro(c.note)}</div>` : ''}
+        </div>
+        <div class="rub-actions">
+          <button class="btn-icon" title="Nuovo appuntamento" onclick="nuovoDaRubrica(${c.id})">&#128197;</button>
+          <button class="btn-icon del" title="Elimina cliente" onclick="eliminaCliente(${c.id})">&#128465;</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function aggiungiCliente() {
+  const nome = document.getElementById('rub-nome').value.trim();
+  const tel  = document.getElementById('rub-tel').value.trim().replace(/\s/g,'');
+  const note = document.getElementById('rub-note').value.trim();
+  if (!nome) { toast('Inserisci il nome'); return; }
+  if (!tel)  { toast('Inserisci il telefono'); return; }
+  if (rubrica.some(c => c.tel === tel)) { toast('Numero gia presente in rubrica'); return; }
+  rubrica.push({ id: Date.now(), nome, tel, note });
+  localStorage.setItem('apt_rub', JSON.stringify(rubrica));
+  document.getElementById('rub-nome').value = '';
+  document.getElementById('rub-tel').value  = '';
+  document.getElementById('rub-note').value = '';
+  renderRubrica();
+  toast('Cliente aggiunto!');
+}
+
+function eliminaCliente(id) {
+  if (!confirm('Eliminare questo cliente dalla rubrica?')) return;
+  rubrica = rubrica.filter(c => c.id !== id);
+  localStorage.setItem('apt_rub', JSON.stringify(rubrica));
+  renderRubrica();
+  toast('Cliente eliminato');
+}
+
+function nuovoDaRubrica(id) {
+  const c = rubrica.find(r => r.id === id);
+  if (!c) return;
+  chiudiRubricaBtn();
+  apriNuovo(null, null);
+  setTimeout(() => {
+    document.getElementById('m-nome').value = c.nome;
+    document.getElementById('m-tel').value  = c.tel;
+    aggiornaAnteprima();
+  }, 100);
+}
+
+// ── UTILITY ──
+function salvaStorage() { localStorage.setItem('apt_v2', JSON.stringify(appuntamenti)); }
+function toISO(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function formattaData(d) {
+  if (!d) return '';
+  const [y,m,g] = d.split('-');
+  const obj = new Date(d + 'T00:00:00');
+  return `${GIORNI_NOME[obj.getDay()]} ${parseInt(g)} ${MESI_BREVE[parseInt(m)-1]} ${y}`;
+}
+function sicuro(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js")
+    .then(() => console.log("SW registrato"))
+    .catch(e => console.log("SW errore", e));
+}
+</script>
+</body>
+</html>
