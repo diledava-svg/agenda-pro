@@ -4,11 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agenda Settimanale</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1a1814">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="AgendaPro">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -250,6 +245,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
           <option value="90">1 ora e mezza</option>
           <option value="120">2 ore</option>
           <option value="180">3 ore</option>
+          <option value="240">4 ore</option>
           <option value="0">Tutto il giorno</option>
         </select>
       </div>
@@ -284,7 +280,9 @@ Ti aspettiamo! &#128522;</textarea>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
       Invia reminder
     </a>
+    <button class="btn-del" id="btnElimina" style="display:none" onclick="elimina()"><button class="btn-del" id="btnElimina" style="display:none" onclick="elimina()">&#128465; Elimina</button>#128465; Elimina</button>
     <button class="btn-del" id="btnElimina" style="display:none" onclick="elimina()">&#128465; Elimina</button>
+    <button class="btn-del" id="btnICS" onclick="esportaICS()" style="border-color:var(--blue);color:var(--blue)">&#128197; Aggiungi a Calendar</button>
   </div>
 </div>
 </div>
@@ -726,6 +724,52 @@ function nuovoDaRubrica(id) {
 }
 
 // ── UTILITY ──
+
+// ── ESPORTA ICS (Google Calendar) ──
+function esportaICS() {
+  const nome     = document.getElementById("m-nome").value.trim();
+  const data     = document.getElementById("m-data").value;
+  const ora      = document.getElementById("m-ora").value;
+  const durata   = parseInt(document.getElementById("m-durata").value) || 60;
+  const servizio = document.getElementById("m-servizio").value.trim();
+  const note     = document.getElementById("m-note").value.trim();
+  if (!nome || !data || !ora) { toast("Compila prima nome, data e ora"); return; }
+
+  const [y,m,g]  = data.split("-");
+  const [hh,mm]  = ora.split(":");
+  const dtStart  = y+m+g+"T"+hh+mm+"00";
+  const startMin = parseInt(hh)*60 + parseInt(mm);
+  const endMin   = startMin + durata;
+  const endH     = String(Math.floor(endMin/60)).padStart(2,"0");
+  const endM     = String(endMin%60).padStart(2,"0");
+  const dtEnd    = y+m+g+"T"+endH+endM+"00";
+
+  const attivita = nomeAttivita || "Appuntamento";
+  const titolo   = servizio ? servizio+" - "+nome : "Appuntamento "+nome;
+  const descr    = "Cliente: "+nome+"\nAttivita: "+attivita+(note ? "\nNote: "+note : "");
+
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//AgendaPro//IT",
+    "BEGIN:VEVENT",
+    "UID:"+Date.now()+"@agendapro",
+    "DTSTART:"+dtStart,
+    "DTEND:"+dtEnd,
+    "SUMMARY:"+titolo,
+    "DESCRIPTION:"+descr,
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].join("\r\n");
+
+  const blob = new Blob([ics], { type: "text/calendar" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = "appuntamento-"+nome.replace(/\s/g,"-")+".ics";
+  a.click(); URL.revokeObjectURL(url);
+  toast("\ud83d\udcc5 File scaricato! Aprilo per aggiungerlo a Google Calendar");
+}
+
 function salvaStorage() { localStorage.setItem('apt_v2', JSON.stringify(appuntamenti)); }
 function toISO(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function formattaData(d) {
@@ -740,13 +784,6 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
-}
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js")
-    .then(() => console.log("SW registrato"))
-    .catch(e => console.log("SW errore", e));
 }
 </script>
 </body>
