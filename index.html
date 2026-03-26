@@ -163,6 +163,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   .form-row{grid-template-columns:1fr;}
 }
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  databaseURL: "https://agenda-pro-1163f-default-rtdb.firebaseio.com"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+</script>
 </head>
 <body>
 
@@ -348,8 +357,21 @@ window.addEventListener('DOMContentLoaded', () => {
     aggiornaAnteprima();
   });
 
+  // Carica dati da Firebase (condivisi)
+  db.ref('appuntamenti').on('value', snap => {
+    if (snap.val()) {
+      appuntamenti = snap.val();
+      localStorage.setItem('apt_v2', JSON.stringify(appuntamenti));
+    }
+    renderSettimana();
+  });
+  db.ref('rubrica').on('value', snap => {
+    if (snap.val()) {
+      rubrica = snap.val();
+      localStorage.setItem('apt_rub', JSON.stringify(rubrica));
+    }
+  });
   costruisciColonnaOre();
-  renderSettimana();
   avviaLinea();
 });
 
@@ -572,6 +594,7 @@ function salva() {
     if (!exists && confirm(`Vuoi aggiungere "${nome}" alla rubrica?`)) {
       rubrica.push({ id: Date.now(), nome, tel: telefono, note: '' });
       localStorage.setItem('apt_rub', JSON.stringify(rubrica));
+  db.ref('rubrica').set(rubrica);
     }
   }
   salvaStorage();
@@ -696,6 +719,7 @@ function aggiungiCliente() {
   if (rubrica.some(c => c.tel === tel)) { toast('Numero gia presente in rubrica'); return; }
   rubrica.push({ id: Date.now(), nome, tel, note });
   localStorage.setItem('apt_rub', JSON.stringify(rubrica));
+  db.ref('rubrica').set(rubrica);
   document.getElementById('rub-nome').value = '';
   document.getElementById('rub-tel').value  = '';
   document.getElementById('rub-note').value = '';
@@ -707,6 +731,7 @@ function eliminaCliente(id) {
   if (!confirm('Eliminare questo cliente dalla rubrica?')) return;
   rubrica = rubrica.filter(c => c.id !== id);
   localStorage.setItem('apt_rub', JSON.stringify(rubrica));
+  db.ref('rubrica').set(rubrica);
   renderRubrica();
   toast('Cliente eliminato');
 }
@@ -770,7 +795,10 @@ function esportaICS() {
   toast("\ud83d\udcc5 File scaricato! Aprilo per aggiungerlo a Google Calendar");
 }
 
-function salvaStorage() { localStorage.setItem('apt_v2', JSON.stringify(appuntamenti)); }
+function salvaStorage() {
+  localStorage.setItem('apt_v2', JSON.stringify(appuntamenti));
+  db.ref('appuntamenti').set(appuntamenti);
+}
 function toISO(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function formattaData(d) {
   if (!d) return '';
